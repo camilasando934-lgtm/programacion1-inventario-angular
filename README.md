@@ -11,7 +11,8 @@
 ## Instalación y ejecución
 ```bash
 npm install
-ng serve```
+ng serve
+```
 
 
 ![Evidencia 1](evidencia.png)
