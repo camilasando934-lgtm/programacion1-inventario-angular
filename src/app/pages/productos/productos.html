@@ -1,87 +1,219 @@
 
-<section class="inventario">
-  <h1>Inventario de Productos</h1>
+<main class="contenedor">
+  <header class="encabezado">
+    <div>
+      <h1>Inventario de Productos</h1>
+      <p class="descripcion">
+        Gestión de inventario en Angular con arreglo local de productos, validaciones y cálculos en tiempo real.
+      </p>
+    </div>
+    <nav class="menu">
+      <a href="#indicadores">Indicadores</a>
+      <a href="#busqueda">Búsqueda y filtros</a>
+      <a href="#formulario">Formulario</a>
+      <a href="#tabla">Listado</a>
+      <button type="button" (click)="resumenRapido()">Ver resumen</button>
+    </nav>
+  </header>
 
-  <div class="buscador">
-    <label for="buscar">Buscar producto:</label>
-    <input
-      id="buscar"
-      type="text"
-      [(ngModel)]="terminoBusqueda"
-      placeholder="Nombre o categoría..."
-    />
-  </div>
+  @if (mensajeEstado) {
+    <p class="aviso-ok">{{ mensajeEstado }}</p>
+  }
 
-  <form (ngSubmit)="guardarProducto()" class="formulario">
+  <section id="indicadores" class="indicadores">
+    <article class="tarjeta">
+      <span>Total de productos</span>
+      <strong>{{ totalProductos }}</strong>
+    </article>
+    <article class="tarjeta">
+      <span>Unidades en existencia</span>
+      <strong>{{ unidadesEnExistencia }}</strong>
+    </article>
+    <article class="tarjeta">
+      <span>Valor del inventario</span>
+      <strong>${{ valorInventario.toFixed(2) }}</strong>
+    </article>
+    <article class="tarjeta">
+      <span>Precio máximo</span>
+      <strong>${{ precioMaximo.toFixed(2) }}</strong>
+    </article>
+    <article class="tarjeta">
+      <span>Productos con stock bajo</span>
+      <strong>{{ cantidadStockBajo }}</strong>
+    </article>
+  </section>
+
+  <section id="busqueda" class="panel">
+    <h2>Búsqueda y filtros</h2>
+
+    <div class="fila">
+      <div>
+        <label for="filtro-texto">Filtrar por nombre o categoría:</label>
+        <input
+          id="filtro-texto"
+          type="text"
+          [(ngModel)]="filtroTexto"
+          placeholder="Ej. Mouse, Laptop, Cable..."
+        />
+      </div>
+
+      <div>
+        <label for="filtro-categoria">Categoría:</label>
+        <select id="filtro-categoria" [(ngModel)]="filtroCategoria">
+          <option value="Todas">Todas</option>
+          @for (cat of categoriasValidas; track cat) {
+            <option [value]="cat">{{ cat }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="fila buscar-id">
+      <div>
+        <label for="buscar-id">Buscar producto por ID:</label>
+        <input
+          id="buscar-id"
+          type="number"
+          [(ngModel)]="idBuscado"
+          placeholder="Ej. 1"
+        />
+      </div>
+      <button type="button" (click)="buscarPorId()">Buscar ID</button>
+    </div>
+
+    @if (resultadoBusquedaId) {
+      <p class="resultado-id">
+        Encontrado: <strong>{{ resultadoBusquedaId.nombre }}</strong> —
+        Categoría: {{ resultadoBusquedaId.categoria }} —
+        Precio: ${{ resultadoBusquedaId.precio.toFixed(2) }} —
+        Stock: {{ resultadoBusquedaId.stock }}
+      </p>
+    }
+    @if (mensajeBusquedaId) {
+      <p class="aviso-error">{{ mensajeBusquedaId }}</p>
+    }
+  </section>
+
+  <section id="formulario" class="panel">
     <h2>{{ editandoId !== null ? 'Editar producto' : 'Agregar producto' }}</h2>
 
-    <input
-      type="text"
-      [(ngModel)]="nuevoProducto.nombre"
-      name="nombre"
-      placeholder="Nombre del producto"
-      required
-    />
-    <input
-      type="text"
-      [(ngModel)]="nuevoProducto.categoria"
-      name="categoria"
-      placeholder="Categoría"
-      required
-    />
-    <input
-      type="number"
-      step="0.01"
-      [(ngModel)]="nuevoProducto.precio"
-      name="precio"
-      placeholder="Precio"
-      required
-    />
-    <input
-      type="number"
-      [(ngModel)]="nuevoProducto.stock"
-      name="stock"
-      placeholder="Stock"
-      required
-    />
-
-    <button type="submit">
-      {{ editandoId !== null ? 'Actualizar' : 'Agregar' }}
-    </button>
-    @if (editandoId !== null) {
-      <button type="button" (click)="limpiarFormulario()">Cancelar</button>
+    @if (mensajeError) {
+      <p class="aviso-error">{{ mensajeError }}</p>
     }
-  </form>
 
-  <table class="tabla">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Nombre</th>
-        <th>Categoría</th>
-        <th>Precio</th>
-        <th>Stock</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (item of productosFiltrados; track item.id) {
+    <form (ngSubmit)="guardarProducto()" class="form-grid">
+      <div>
+        <label for="id">ID (único)</label>
+        <input
+          id="id"
+          name="id"
+          type="number"
+          [(ngModel)]="formulario.id"
+          [disabled]="editandoId !== null"
+          required
+        />
+      </div>
+
+      <div>
+        <label for="nombre">Nombre</label>
+        <input
+          id="nombre"
+          name="nombre"
+          type="text"
+          [(ngModel)]="formulario.nombre"
+          placeholder="Nombre del producto"
+          required
+        />
+      </div>
+
+      <div>
+        <label for="categoria">Categoría</label>
+        <select id="categoria" name="categoria" [(ngModel)]="formulario.categoria">
+          @for (cat of categoriasValidas; track cat) {
+            <option [value]="cat">{{ cat }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <label for="precio">Precio ($)</label>
+        <input
+          id="precio"
+          name="precio"
+          type="number"
+          step="0.01"
+          [(ngModel)]="formulario.precio"
+          required
+        />
+      </div>
+
+      <div>
+        <label for="stock">Stock (entero)</label>
+        <input
+          id="stock"
+          name="stock"
+          type="number"
+          [(ngModel)]="formulario.stock"
+          required
+        />
+      </div>
+
+      <div class="acciones-form">
+        <button type="submit">
+          {{ editandoId !== null ? 'Guardar cambios' : 'Agregar producto' }}
+        </button>
+        @if (editandoId !== null) {
+          <button type="button" (click)="cancelarEdicion()">Cancelar</button>
+        }
+      </div>
+    </form>
+  </section>
+
+  <section id="tabla" class="panel">
+    <h2>Listado de productos ({{ productosFiltrados.length }})</h2>
+
+    <table>
+      <thead>
         <tr>
-          <td>{{ item.id }}</td>
-          <td>{{ item.nombre }}</td>
-          <td>{{ item.categoria }}</td>
-          <td>${{ item.precio.toFixed(2) }}</td>
-          <td>{{ item.stock }}</td>
-          <td>
-            <button type="button" (click)="editarProducto(item)">Editar</button>
-            <button type="button" (click)="eliminarProducto(item.id)">Eliminar</button>
-          </td>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Categoría</th>
+          <th>Precio</th>
+          <th>Stock</th>
+          <th>Estado</th>
+          <th>Subtotal</th>
+          <th>Acciones</th>
         </tr>
-      } @empty {
-        <tr>
-          <td colspan="6">No hay productos que coincidan con la búsqueda.</td>
-        </tr>
-      }
-    </tbody>
-  </table>
-</section>
+      </thead>
+      <tbody>
+        @for (producto of productosFiltrados; track producto.id) {
+          <tr>
+            <td>{{ producto.id }}</td>
+            <td>{{ producto.nombre }}</td>
+            <td>{{ producto.categoria }}</td>
+            <td>${{ producto.precio.toFixed(2) }}</td>
+            <td>{{ producto.stock }}</td>
+            <td>
+              @if (producto.stock === 0) {
+                <span class="estado agotado">Agotado</span>
+              } @else if (producto.stock < 5) {
+                <span class="estado bajo">Stock bajo</span>
+              } @else {
+                <span class="estado normal">Disponible</span>
+              }
+            </td>
+            <td>${{ (producto.precio * producto.stock).toFixed(2) }}</td>
+            <td>
+              <button type="button" (click)="editarProducto(producto)">Editar</button>
+              <button type="button" (click)="eliminarProducto(producto.id)">Eliminar</button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8">No hay productos que coincidan con el filtro.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+</main>
